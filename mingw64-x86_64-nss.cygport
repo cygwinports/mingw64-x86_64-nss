@@ -1,0 +1,101 @@
+CROSS_HOST="x86_64-w64-mingw32"
+inherit cross
+
+NAME="mingw64-x86_64-nss"
+VERSION=3.20.1
+RELEASE=1
+CATEGORY="Devel"
+SUMMARY="Netscape Network Security Services for Win64 toolchain"
+DESCRIPTION="Network Security Services (NSS) is a set of libraries designed
+to support cross-platform development of security-enabled client and server
+applications. Applications built with NSS can support SSL v2 and v3, TLS,
+PKCS#5, PKCS#7, PKCS#11, PKCS#12, S/MIME, X.509 v3 certificates, and other
+security standards."
+HOMEPAGE="http://www.mozilla.org/projects/security/pki/nss/"
+SRC_URI="https://ftp.mozilla.org/pub/mozilla.org/security/nss/releases/NSS_${VERSION//./_}_RTM/src/nss-${VERSION}.tar.gz
+	https://pkgs.fedoraproject.org/cgit/nss.git/plain/nss-config.in
+	https://pkgs.fedoraproject.org/cgit/nss.git/plain/nss.pc.in
+	https://pkgs.fedoraproject.org/cgit/nss-softokn.git/plain/nss-softokn.pc.in
+	https://pkgs.fedoraproject.org/cgit/nss-util.git/plain/nss-util.pc.in
+	https://pkgs.fedoraproject.org/cgit/nss.git/plain/disableSSL2libssl.patch
+	https://pkgs.fedoraproject.org/cgit/nss.git/plain/disableSSL2tests.patch
+"
+SRC_DIR="nss-${VERSION}"
+PATCH_URI="
+	nss-build.patch
+	nss-3.20.1-headers.patch
+"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook() {
+	pushd nss
+	cygpatch ../disableSSL2libssl.patch
+	cygpatch ../disableSSL2tests.patch
+	popd
+}
+
+src_compile() {
+	lndirs
+
+	cd ${B}/nss
+
+	pushd coreconf/nsinstall
+	gcc -o nsinstall nsinstall.c pathsub.c
+	popd
+
+	cygmake -j1 \
+		CC=${CC} RANLIB=${RANLIB} RC=${RC} OPTIMIZER="${CFLAGS}" \
+		OS_TARGET=WINNT OS_RELEASE=5.0 XP_WIN=1 NS_USE_GCC=1 USE_64=1 \
+		IMPORT_LIB_SUFFIX=.dll.a \
+		NSINSTALL=${B}/nss/coreconf/nsinstall/nsinstall \
+		NSPR_INCLUDE_DIR=${CROSS_INCLUDEDIR}/nspr NSPR_LIB_DIR=${CROSS_LIBDIR} \
+		NSS_NO_SSL2_NO_EXPORT=1 \
+		NSS_USE_SYSTEM_SQLITE=1 SQLITE_LIB_DIR=${CROSS_LIBDIR} \
+		USE_SYSTEM_ZLIB=1 ZLIB_LIBS=${CROSS_LIBDIR}/libz.dll.a
+
+	sed -e "s,@prefix@,${CROSS_PREFIX},g" \
+		-e "s,@MOD_MAJOR_VERSION@,${PV[1]},g" \
+		-e "s,@MOD_MINOR_VERSION@,${PV[2]},g" \
+		-e "s,@MOD_PATCH_VERSION@,${PV[3]},g" \
+		${S}/nss-config.in > ${B}/dist/nss-config
+
+	sed -e "s,%prefix%,${CROSS_PREFIX},g" \
+		-e "s,%exec_prefix%,${CROSS_PREFIX},g" \
+		-e "s,%includedir%,${CROSS_INCLUDEDIR}/nss," \
+		-e "s,%libdir%,${CROSS_LIBDIR},g" \
+		-e "s,%NSPR_VERSION%,`nspr-config --version`,g" \
+		-e "s,%NSS_VERSION%,${VERSION},g" \
+		-e "s,%NSSUTIL_VERSION%,${VERSION},g" \
+		${S}/nss.pc.in > ${B}/dist/nss.pc
+
+	sed -e "s,%prefix%,${CROSS_PREFIX},g" \
+		-e "s,%exec_prefix%,${CROSS_PREFIX},g" \
+		-e "s,%includedir%,${CROSS_INCLUDEDIR}/nss," \
+		-e "s,%libdir%,${CROSS_LIBDIR},g" \
+		-e "s,%NSPR_VERSION%,`nspr-config --version`,g" \
+		-e "s,%NSSUTIL_VERSION%,${VERSION},g" \
+		-e "s,%SOFTOKN_VERSION%,${VERSION},g" \
+		${S}/nss-softokn.pc.in > ${B}/dist/nss-softokn.pc
+
+	sed -e "s,%prefix%,/usr,g" \
+		-e "s,%exec_prefix%,/usr,g" \
+		-e "s,%includedir%,/usr/include/nss," \
+		-e "s,%libdir%,/usr/lib,g" \
+		-e "s,%NSPR_VERSION%,`nspr-config --version`,g" \
+		-e "s,%NSSUTIL_VERSION%,${VERSION},g" \
+		${S}/nss-util.pc.in > ${B}/dist/nss-util.pc
+}
+
+src_install() {
+	cd ${B}/dist
+	dobin WINNT*/lib/*.dll
+	dobin nss-config
+	dolib WINNT*/lib/*3.dll.a WINNT*/lib/lib{crmf,nssb,nssckfw}.a
+
+	includeinto nss
+	doinclude public/nss/*.h
+
+	dopkgconfig nss.pc nss-softokn.pc nss-util.pc
+
+	dodoc ${S}/COPYING ${S}/trademarks.txt
+}
