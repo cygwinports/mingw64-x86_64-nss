@@ -2,7 +2,7 @@ CROSS_HOST="x86_64-w64-mingw32"
 inherit cross
 
 NAME="mingw64-x86_64-nss"
-VERSION=3.20.1
+VERSION=3.27.1
 RELEASE=1
 CATEGORY="Devel"
 SUMMARY="Netscape Network Security Services for Win64 toolchain"
@@ -17,22 +17,12 @@ SRC_URI="https://ftp.mozilla.org/pub/mozilla.org/security/nss/releases/NSS_${VER
 	https://pkgs.fedoraproject.org/cgit/nss.git/plain/nss.pc.in
 	https://pkgs.fedoraproject.org/cgit/nss-softokn.git/plain/nss-softokn.pc.in
 	https://pkgs.fedoraproject.org/cgit/nss-util.git/plain/nss-util.pc.in
-	https://pkgs.fedoraproject.org/cgit/nss.git/plain/disableSSL2libssl.patch
-	https://pkgs.fedoraproject.org/cgit/nss.git/plain/disableSSL2tests.patch
 "
 SRC_DIR="nss-${VERSION}"
 PATCH_URI="
 	nss-build.patch
 	nss-3.20.1-headers.patch
 "
-
-CYGPORT_USE_UNSTABLE_API=1
-src_unpack_hook() {
-	pushd nss
-	cygpatch ../disableSSL2libssl.patch
-	cygpatch ../disableSSL2tests.patch
-	popd
-}
 
 src_compile() {
 	lndirs
@@ -49,6 +39,7 @@ src_compile() {
 		IMPORT_LIB_SUFFIX=.dll.a \
 		NSINSTALL=${B}/nss/coreconf/nsinstall/nsinstall \
 		NSPR_INCLUDE_DIR=${CROSS_INCLUDEDIR}/nspr NSPR_LIB_DIR=${CROSS_LIBDIR} \
+		NSS_DISABLE_GTESTS=1 \
 		NSS_NO_SSL2_NO_EXPORT=1 \
 		NSS_USE_SYSTEM_SQLITE=1 SQLITE_LIB_DIR=${CROSS_LIBDIR} \
 		USE_SYSTEM_ZLIB=1 ZLIB_LIBS=${CROSS_LIBDIR}/libz.dll.a

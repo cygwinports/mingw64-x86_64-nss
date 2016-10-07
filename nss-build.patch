@@ -11,6 +11,15 @@
  include ../platrules.mk
 --- nss-3.20.1/nss/cmd/platlibs.mk	2015-10-15 14:51:18.000000000 -0500
 +++ nss-3.20.1/nss/cmd/platlibs.mk	2015-11-10 15:15:09.381116300 -0600
+@@ -85,7 +85,7 @@ SECTOOL_LIB = \
+ endif
+ 
+ ifneq ($(NSS_BUILD_SOFTOKEN_ONLY),1)
+-ifeq ($(OS_ARCH), WINNT)
++ifeq ($(OS_ARCH), WINNT-broken)
+ # breakdown for windows
+ NSS_LIBS_1 = \
+ 	$(DIST)/lib/$(LIB_PREFIX)smime.$(LIB_SUFFIX) \
 @@ -66,7 +66,7 @@ PKIXLIB = \
  	$(DIST)/lib/$(LIB_PREFIX)pkixcertsel.$(LIB_SUFFIX)
  
@@ -85,11 +94,11 @@
 --- nss-3.17.1/nss/coreconf/WIN32.mk	2014-09-23 21:09:22.000000000 +0200
 +++ nss-3.17.1/nss/coreconf/WIN32.mk	2014-10-03 12:57:19.714776541 +0200
 @@ -106,7 +106,7 @@
-     # The -mnop-fun-dllimport flag allows us to avoid a drawback of
-     # the dllimport attribute that a pointer to a function marked as
-     # dllimport cannot be used as as a constant address.
--    OS_CFLAGS += -mwindows -mms-bitfields -mnop-fun-dllimport
-+    OS_CFLAGS += -mms-bitfields -mnop-fun-dllimport -D_WIN32_IE=0x0501 -U__MMX__ -U__SSE__ -U__SSE2__ -D__CRT__NO_INLINE=1 -D_WSTRING_S_DEFINED=1
+ DLL_SUFFIX   = dll
+ 
+ ifdef NS_USE_GCC
+-    OS_CFLAGS += -mwindows -mms-bitfields
++    OS_CFLAGS += -mms-bitfields -D_WIN32_IE=0x0501 -U__MMX__ -U__SSE__ -U__SSE2__ -D__CRT__NO_INLINE=1 -D_WSTRING_S_DEFINED=1
      _GEN_IMPORT_LIB=-Wl,--out-implib,$(IMPORT_LIBRARY)
      DLLFLAGS  += -mwindows -o $@ -shared -Wl,--export-all-symbols $(if $(IMPORT_LIBRARY),$(_GEN_IMPORT_LIB))
      ifdef BUILD_OPT
