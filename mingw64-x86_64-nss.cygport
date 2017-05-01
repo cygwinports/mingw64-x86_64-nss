@@ -2,7 +2,7 @@ CROSS_HOST="x86_64-w64-mingw32"
 inherit cross
 
 NAME="mingw64-x86_64-nss"
-VERSION=3.27.1
+VERSION=3.30.2
 RELEASE=1
 CATEGORY="Devel"
 SUMMARY="Netscape Network Security Services for Win64 toolchain"
@@ -41,6 +41,7 @@ src_compile() {
 		NSPR_INCLUDE_DIR=${CROSS_INCLUDEDIR}/nspr NSPR_LIB_DIR=${CROSS_LIBDIR} \
 		NSS_DISABLE_GTESTS=1 \
 		NSS_NO_SSL2_NO_EXPORT=1 \
+		NSS_DISABLE_TLS_1_3=1 \
 		NSS_USE_SYSTEM_SQLITE=1 SQLITE_LIB_DIR=${CROSS_LIBDIR} \
 		USE_SYSTEM_ZLIB=1 ZLIB_LIBS=${CROSS_LIBDIR}/libz.dll.a
 
@@ -68,10 +69,10 @@ src_compile() {
 		-e "s,%SOFTOKN_VERSION%,${VERSION},g" \
 		${S}/nss-softokn.pc.in > ${B}/dist/nss-softokn.pc
 
-	sed -e "s,%prefix%,/usr,g" \
-		-e "s,%exec_prefix%,/usr,g" \
-		-e "s,%includedir%,/usr/include/nss," \
-		-e "s,%libdir%,/usr/lib,g" \
+	sed -e "s,%prefix%,${CROSS_PREFIX},g" \
+		-e "s,%exec_prefix%,${CROSS_PREFIX},g" \
+		-e "s,%includedir%,${CROSS_INCLUDEDIR}/nss," \
+		-e "s,%libdir%,${CROSS_LIBDIR},g" \
 		-e "s,%NSPR_VERSION%,`nspr-config --version`,g" \
 		-e "s,%NSSUTIL_VERSION%,${VERSION},g" \
 		${S}/nss-util.pc.in > ${B}/dist/nss-util.pc
